@@ -11,6 +11,10 @@ struct Token {
     literal: String,
 }
 
+struct Lexer {
+    input: String,
+}
+
 impl Token {
     fn new(t: TokenType, literal: &str) -> Self {
         return Token {
@@ -20,8 +24,16 @@ impl Token {
     }
 }
 
-fn next_token(_: &str) -> Token {
-    return Token::new(TokenType::SEMICOLON, ";");
+impl Lexer {
+    fn new(input: &str) -> Self {
+        return Lexer {
+            input: input.to_string(),
+        };
+    }
+
+    fn next_token(&self) -> Token {
+        return Token::new(TokenType::SEMICOLON, ";");
+    }
 }
 
 fn main() {}
@@ -32,8 +44,8 @@ mod tests {
 
     #[test]
     fn test_next_token() {
-        let input = String::from("=");
-        let token = next_token(&input);
+        let lexer = Lexer::new(";");
+        let token = lexer.next_token();
         assert_eq!(token, Token::new(TokenType::SEMICOLON, ";"));
     }
 }
