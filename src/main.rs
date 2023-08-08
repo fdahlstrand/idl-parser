@@ -1,8 +1,12 @@
 #![allow(dead_code)]
+use std::iter::Peekable;
+use std::str::Chars;
 
 #[derive(PartialEq, Debug)]
 enum TokenType {
     SEMICOLON,
+    LCURLY,
+    RCURLY,
 }
 
 #[derive(PartialEq, Debug)]
@@ -11,8 +15,8 @@ struct Token {
     literal: String,
 }
 
-struct Lexer {
-    input: String,
+struct Lexer<'a> {
+    input: Peekable<Chars<'a>>,
 }
 
 impl Token {
@@ -24,15 +28,24 @@ impl Token {
     }
 }
 
-impl Lexer {
-    fn new(input: &str) -> Self {
-        return Lexer {
-            input: input.to_string(),
-        };
+impl<'a> Lexer<'a> {
+    fn new(input: &'a str) -> Self {
+        Lexer {
+            input: input.chars().peekable(),
+        }
     }
 
-    fn next_token(&self) -> Token {
-        return Token::new(TokenType::SEMICOLON, ";");
+    fn next_token(&mut self) -> Token {
+        let ch = self.input.next();
+        match ch {
+            Some(c) => match c {
+                ';' => Token::new(TokenType::SEMICOLON, ";"),
+                '{' => Token::new(TokenType::LCURLY, "{"),
+                '}' => Token::new(TokenType::RCURLY, "}"),
+                _ => Token::new(TokenType::SEMICOLON, ";"),
+            },
+            None => Token::new(TokenType::SEMICOLON, ";"),
+        }
     }
 }
 
@@ -44,8 +57,9 @@ mod tests {
 
     #[test]
     fn test_next_token() {
-        let lexer = Lexer::new(";");
-        let token = lexer.next_token();
-        assert_eq!(token, Token::new(TokenType::SEMICOLON, ";"));
+        let mut lexer = Lexer::new(";{}");
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::LCURLY, "{"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::RCURLY, "}"));
     }
 }
