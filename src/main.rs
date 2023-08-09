@@ -55,8 +55,16 @@ fn main() {}
 mod tests {
     use super::*;
 
+    fn assert_token(expected: &Token, actual: &Token) -> Result<(), String> {
+        if expected == actual {
+            Ok(())
+        } else {
+            Err(format!("Expected {:?}, got {:?}", expected, actual))
+        }
+    }
+
     #[test]
-    fn test_next_token() {
+    fn test_next_token() -> Result<(), String> {
         let mut lexer = Lexer::new(";{}".chars().peekable());
         let expected_tokens = [
             Token::new(TokenType::SEMICOLON, ";"),
@@ -65,13 +73,17 @@ mod tests {
             Token::new(TokenType::EOF, ""),
         ];
         for expected in expected_tokens {
-            assert_eq!(lexer.next_token(), expected);
+            assert_token(&expected, &lexer.next_token())?;
         }
+
+        Ok(())
     }
 
     #[test]
-    fn test_bad_token() {
+    fn test_bad_token() -> Result<(), String> {
         let mut lexer = Lexer::new("ö".chars().peekable());
-        assert_eq!(lexer.next_token(), Token::new(TokenType::ILLEGAL, ""));
+        assert_token(&Token::new(TokenType::ILLEGAL, ""), &lexer.next_token())?;
+
+        Ok(())
     }
 }
