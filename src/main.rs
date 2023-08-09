@@ -4,9 +4,11 @@ use std::str::Chars;
 
 #[derive(PartialEq, Debug)]
 enum TokenType {
+    EOF,
     SEMICOLON,
-    LCURLY,
-    RCURLY,
+    LBRACE,
+    RBRACE,
+    ILLEGAL,
 }
 
 #[derive(PartialEq, Debug)]
@@ -38,11 +40,11 @@ impl<'a> Lexer<'a> {
         match ch {
             Some(c) => match c {
                 ';' => Token::new(TokenType::SEMICOLON, ";"),
-                '{' => Token::new(TokenType::LCURLY, "{"),
-                '}' => Token::new(TokenType::RCURLY, "}"),
-                _ => Token::new(TokenType::SEMICOLON, ";"),
+                '{' => Token::new(TokenType::LBRACE, "{"),
+                '}' => Token::new(TokenType::RBRACE, "}"),
+                _ => Token::new(TokenType::ILLEGAL, ""),
             },
-            None => Token::new(TokenType::SEMICOLON, ";"),
+            None => Token::new(TokenType::EOF, ""),
         }
     }
 }
@@ -56,8 +58,20 @@ mod tests {
     #[test]
     fn test_next_token() {
         let mut lexer = Lexer::new(";{}".chars().peekable());
-        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
-        assert_eq!(lexer.next_token(), Token::new(TokenType::LCURLY, "{"));
-        assert_eq!(lexer.next_token(), Token::new(TokenType::RCURLY, "}"));
+        let expected_tokens = [
+            Token::new(TokenType::SEMICOLON, ";"),
+            Token::new(TokenType::LBRACE, "{"),
+            Token::new(TokenType::RBRACE, "}"),
+            Token::new(TokenType::EOF, ""),
+        ];
+        for expected in expected_tokens {
+            assert_eq!(lexer.next_token(), expected);
+        }
+    }
+
+    #[test]
+    fn test_bad_token() {
+        let mut lexer = Lexer::new("ö".chars().peekable());
+        assert_eq!(lexer.next_token(), Token::new(TokenType::ILLEGAL, ""));
     }
 }
