@@ -29,10 +29,8 @@ impl Token {
 }
 
 impl<'a> Lexer<'a> {
-    fn new(input: &'a str) -> Self {
-        Lexer {
-            input: input.chars().peekable(),
-        }
+    fn new(input: Peekable<Chars<'a>>) -> Self {
+        Lexer { input }
     }
 
     fn next_token(&mut self) -> Token {
@@ -57,7 +55,7 @@ mod tests {
 
     #[test]
     fn test_next_token() {
-        let mut lexer = Lexer::new(";{}");
+        let mut lexer = Lexer::new(";{}".chars().peekable());
         assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::LCURLY, "{"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::RCURLY, "}"));
