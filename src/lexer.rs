@@ -9,7 +9,7 @@ pub(crate) struct Lexer {
     ch: char,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub(crate) enum Token {
     Comma,
     Identifier(String),
@@ -43,15 +43,15 @@ impl Lexer {
         match self.ch {
             '\0' => Some(Token::EOF),
             ',' => {
-                self.advance();
+                self.consume();
                 Some(Token::Comma)
             }
-            _ if self.ch.is_ascii_alphanumeric() => self.identifier(),
+            _ if self.ch.is_ascii_alphanumeric() || self.ch == '_' => self.identifier(),
             _ => None
         }
     }
 
-    fn advance(&mut self) {
+    fn consume(&mut self) {
         self.pos += 1;
         if self.pos >= self.input.len() {
             self.ch = '\0';
@@ -62,9 +62,12 @@ impl Lexer {
 
     fn identifier(&mut self) -> Option<Token> {
         let mut ident = "".to_string();
+        if self.ch == '_' {
+            self.consume();
+        }
         loop {
             ident.push(self.ch);
-            self.advance();
+            self.consume();
             if !self.ch.is_ascii_alphanumeric() {
                 break;
             }
@@ -75,7 +78,30 @@ impl Lexer {
 
     fn skip_whitespace(&mut self) {
         while self.ch.is_ascii_whitespace() {
-            self.advance();
+            self.consume();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn identifier() {
+        let mut lexer = Lexer::new("identifier");
+
+        let token = lexer.next();
+
+        assert_eq!(Some(Token::Identifier("identifier".to_string())), token);
+    }
+
+    #[test]
+    fn escaped_identifier() {
+        let mut lexer = Lexer::new("_identifier");
+
+        let token = lexer.next();
+
+        assert_eq!(Some(Token::Identifier("identifier".to_string())), token);
     }
 }
