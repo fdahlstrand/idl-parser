@@ -1,8 +1,6 @@
 use std::fmt;
 use std::fmt::Formatter;
 
-use crate::lexer::Token::Identifier;
-
 pub(crate) struct Lexer {
     input: Vec<char>,
     pos: usize,
@@ -11,17 +9,21 @@ pub(crate) struct Lexer {
 
 #[derive(PartialEq, Debug)]
 pub(crate) enum Token {
+    Abstract,
     Comma,
-    Identifier(String),
     EOF,
+    Identifier(String),
 }
+
+const KEYWORDS: [(&str, Token); 1] = [("abstract", Token::Abstract)];
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Token::Abstract => write!(f, "<Keyword|abstract>"),
             Token::Comma => write!(f, "<Comma>"),
-            Identifier(id) => write!(f, "<Identifier, {}>", id),
             Token::EOF => write!(f, "<EOF>"),
+            Token::Identifier(id) => write!(f, "<Identifier, {}>", id),
         }
     }
 }
@@ -61,6 +63,32 @@ impl Lexer {
     }
 
     fn identifier(&mut self) -> Option<Token> {
+        let match_keyword = self.ch != '_';
+        let ident = self.read_identifier();
+
+        if match_keyword {
+            match self.lookup_keyword(&ident) {
+                None => Some(Token::Identifier(ident)),
+                t => t
+            }
+        } else {
+            Some(Token::Identifier(ident))
+        }
+    }
+
+    fn lookup_keyword(&mut self, ident: &str) -> Option<Token> {
+        let lowercase_ident = ident.to_lowercase();
+        for (id, token) in KEYWORDS {
+            if id == lowercase_ident {
+                return Some(token);
+            }
+        }
+
+        None
+    }
+
+
+    fn read_identifier(&mut self) -> String {
         let mut ident = "".to_string();
         if self.ch == '_' {
             self.consume();
@@ -73,7 +101,7 @@ impl Lexer {
             }
         }
 
-        Some(Identifier(ident))
+        ident
     }
 
     fn skip_whitespace(&mut self) {
@@ -103,5 +131,23 @@ mod tests {
         let token = lexer.next();
 
         assert_eq!(Some(Token::Identifier("identifier".to_string())), token);
+    }
+
+    #[test]
+    fn keyword() {
+        let mut lexer = Lexer::new("abstract");
+
+        let token = lexer.next();
+
+        assert_eq!(Some(Token::Abstract), token);
+    }
+
+    #[test]
+    fn escaped_keyword() {
+        let mut lexer = Lexer::new("_abstract");
+
+        let token = lexer.next();
+
+        assert_eq!(Some(Token::Identifier("abstract".to_string())), token);
     }
 }
