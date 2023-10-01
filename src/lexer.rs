@@ -1,6 +1,3 @@
-use std::fmt;
-use std::fmt::Formatter;
-
 pub(crate) struct Lexer {
     input: Vec<char>,
     pos: usize,
@@ -12,21 +9,12 @@ pub(crate) enum Token {
     Abstract,
     Comma,
     EOF,
+    Error(String),
     Identifier(String),
 }
 
 const KEYWORDS: [(&str, Token); 1] = [("abstract", Token::Abstract)];
 
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Token::Abstract => write!(f, "<Keyword|abstract>"),
-            Token::Comma => write!(f, "<Comma>"),
-            Token::EOF => write!(f, "<EOF>"),
-            Token::Identifier(id) => write!(f, "<Identifier, {}>", id),
-        }
-    }
-}
 
 impl Lexer {
     pub fn new(src: &str) -> Self {
@@ -35,21 +23,24 @@ impl Lexer {
             pos: 0,
             ch: '\0',
         };
-        lexer.ch = lexer.input[0];
+
+        if lexer.input.len() > 0 {
+            lexer.ch = lexer.input[0];
+        }
 
         lexer
     }
 
-    pub fn next(&mut self) -> Option<Token> {
+    pub fn next(&mut self) -> Token {
         self.skip_whitespace();
         match self.ch {
-            '\0' => Some(Token::EOF),
+            '\0' => Token::EOF,
             ',' => {
                 self.consume();
-                Some(Token::Comma)
+                Token::Comma
             }
-            _ if self.ch.is_ascii_alphanumeric() || self.ch == '_' => self.identifier(),
-            _ => None
+            _ if self.ch.is_ascii_alphabetic() || self.ch == '_' => self.identifier(),
+            ch => Token::Error(format!("Unexpected character '{}'", ch)),
         }
     }
 
@@ -62,17 +53,21 @@ impl Lexer {
         }
     }
 
-    fn identifier(&mut self) -> Option<Token> {
+    fn identifier(&mut self) -> Token {
         let match_keyword = self.ch != '_';
         let ident = self.read_identifier();
 
+        if ident.is_empty() {
+            return Token::Error("Invalid Identifier".to_string());
+        }
+
         if match_keyword {
             match self.lookup_keyword(&ident) {
-                None => Some(Token::Identifier(ident)),
-                t => t
+                None => Token::Identifier(ident),
+                Some(t) => t
             }
         } else {
-            Some(Token::Identifier(ident))
+            Token::Identifier(ident)
         }
     }
 
@@ -93,11 +88,14 @@ impl Lexer {
         if self.ch == '_' {
             self.consume();
         }
-        loop {
-            ident.push(self.ch);
-            self.consume();
-            if !self.ch.is_ascii_alphanumeric() {
-                break;
+
+        if self.ch.is_ascii_alphabetic() {
+            loop {
+                ident.push(self.ch);
+                self.consume();
+                if !(self.ch.is_ascii_alphanumeric() || self.ch == '_') {
+                    break;
+                }
             }
         }
 
@@ -113,41 +111,98 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn identifier() {
-        let mut lexer = Lexer::new("identifier");
+    #[rstest]
+    #[case::empty_input("")]
+    #[case::explicit_nul("\0")]
+    #[case::whitespace("\n\r\t ")]
+    fn eof(#[case] input: &str) {
+        let mut lexer = Lexer::new(input);
 
         let token = lexer.next();
 
-        assert_eq!(Some(Token::Identifier("identifier".to_string())), token);
+        assert_eq!(Token::EOF, token);
     }
 
-    #[test]
-    fn escaped_identifier() {
-        let mut lexer = Lexer::new("_identifier");
+    #[rstest]
+    #[case::basic_identifier("identifier")]
+    #[case::short_identifer("i")]
+    #[case::mixed_case("IdEnTiFiEr")]
+    #[case::with_numbers("Id9nT2FiEr")]
+    #[case::with_underscore("Id9n_T2FiEr_")]
+    fn good_identifier(#[case] input: &str) {
+        let mut lexer = Lexer::new(input);
 
-        let token = lexer.next();
+        let token = lexer.identifier();
 
-        assert_eq!(Some(Token::Identifier("identifier".to_string())), token);
+        assert_eq!(Token::Identifier(input.to_string()), token);
     }
 
-    #[test]
+    #[rstest]
+    #[case::starting_with_number("9identifier")]
+    fn bad_identifier(#[case] input: &str) {
+        let mut lexer = Lexer::new(input);
+
+        let token = lexer.identifier();
+
+        assert_ne!(Token::Identifier(input.to_string()), token);
+    }
+
+    #[rstest]
+    #[case::basic_identifer("_identifier")]
+    #[case::escaped_keyword("_abstract")]
+    fn good_escaped_identifier(#[case] input: &str) {
+        let mut lexer = Lexer::new(input);
+
+        let token = lexer.identifier();
+
+        assert_eq!(Token::Identifier(input[1..].to_string()), token);
+    }
+
+    #[rstest]
+    #[case::double_underscore("__identifier")]
+    #[case::number_after_escape("_9identifier")]
+    #[case::only_escape("_")]
+    fn bad_escaped_identifier(#[case] input: &str) {
+        let mut lexer = Lexer::new(input);
+
+        let token = lexer.identifier();
+
+        assert_ne!(Token::Identifier(input[1..].to_string()), token);
+    }
+
+    #[rstest]
     fn keyword() {
         let mut lexer = Lexer::new("abstract");
 
-        let token = lexer.next();
+        let token = lexer.identifier();
 
-        assert_eq!(Some(Token::Abstract), token);
+        assert_eq!(Token::Abstract, token);
     }
 
-    #[test]
-    fn escaped_keyword() {
-        let mut lexer = Lexer::new("_abstract");
+    #[rstest]
+    #[case::comma(",", Token::Comma)]
+    fn punctuation(#[case] input: &str, #[case] expected: Token) {
+        let mut lexer = Lexer::new(input);
 
         let token = lexer.next();
 
-        assert_eq!(Some(Token::Identifier("abstract".to_string())), token);
+        assert_eq!(expected, token);
+    }
+
+    #[rstest]
+    #[case::unexpected_token("ä")]
+    fn lexer_error(#[case] input: &str) {
+        let mut lexer = Lexer::new(input);
+
+        let token = lexer.next();
+
+        match token {
+            Token::Error(_) => {}
+            _ => assert!(false, "Lexer did not return error, got {}", token)
+        }
     }
 }
