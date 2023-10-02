@@ -9,8 +9,9 @@ pub(crate) enum Token {
     Abstract,
     Comma,
     EOF,
-    Error(String),
+    Invalid(String),
     Identifier(String),
+    Integer(i64),
 }
 
 const KEYWORDS: [(&str, Token); 1] = [("abstract", Token::Abstract)];
@@ -39,8 +40,9 @@ impl Lexer {
                 self.consume();
                 Token::Comma
             }
+            _ if self.ch.is_ascii_digit() => self.number(),
             _ if self.ch.is_ascii_alphabetic() || self.ch == '_' => self.identifier(),
-            ch => Token::Error(format!("Unexpected character '{}'", ch)),
+            ch => Token::Invalid(format!("Unexpected character '{}'", ch)),
         }
     }
 
@@ -53,12 +55,20 @@ impl Lexer {
         }
     }
 
+    fn peek(&mut self) -> Option<char> {
+        return if self.pos + 1 >= self.input.len() {
+            None
+        } else {
+            Some(self.input[self.pos + 1])
+        };
+    }
+
     fn identifier(&mut self) -> Token {
         let match_keyword = self.ch != '_';
         let ident = self.read_identifier();
 
         if ident.is_empty() {
-            return Token::Error("Invalid Identifier".to_string());
+            return Token::Invalid("Invalid Identifier".to_string());
         }
 
         if match_keyword {
@@ -100,6 +110,61 @@ impl Lexer {
         }
 
         ident
+    }
+
+    fn number(&mut self) -> Token {
+        let mut literal = "".to_string();
+
+        if self.ch == '0' && (self.peek() == Some('x') || self.peek() == Some('X')) {
+            let mut value: i64 = 0;
+
+            literal.push(self.ch);
+            self.consume();
+            literal.push(self.ch);
+            self.consume();
+
+            if !self.ch.is_ascii_hexdigit() {
+                return Token::Invalid("Invalid hexadecimal literal".to_string());
+            }
+
+            loop {
+                literal.push(self.ch);
+                value = value * 16 + i64::from(self.ch.to_digit(16).unwrap());
+                self.consume();
+
+                if !self.ch.is_ascii_hexdigit() {
+                    break;
+                }
+            }
+
+            return Token::Integer(value);
+        } else if self.ch == '0' {
+            let mut value: i64 = 0;
+            loop {
+                literal.push(self.ch);
+                value = value * 8 + i64::from(self.ch.to_digit(10).unwrap());
+                self.consume();
+                if !('0' <= self.ch && self.ch <= '7') {
+                    break;
+                }
+            }
+
+            return Token::Integer(value);
+        } else {
+            loop {
+                literal.push(self.ch);
+                self.consume();
+                if !self.ch.is_ascii_digit() {
+                    break;
+                }
+            }
+        }
+
+        match literal.parse::<i64>() {
+            Ok(value) => Token::Integer(value),
+            // This should be an internal lexer error.
+            Err(_) => Token::Invalid(format!("Bad Integer '{}'", literal)),
+        }
     }
 
     fn skip_whitespace(&mut self) {
@@ -201,7 +266,36 @@ mod tests {
         let token = lexer.next();
 
         match token {
-            Token::Error(_) => {}
+            Token::Invalid(_) => {}
+            _ => assert!(false, "Lexer did not return error, got {}", token)
+        }
+    }
+
+    #[rstest]
+    #[case::simple_integer("1", 1)]
+    #[case::long_integer("1133388990", 1133388990)]
+    #[case::simple_octal("01", 1)]
+    #[case::octal_double_digit("011", 9)]
+    #[case::simple_hexadecimal("0xA", 10)]
+    #[case::long_hexadecimal("0Xffff", 65535)]
+    fn integer(#[case] input: &str, #[case] value: i64) {
+        let mut lexer = Lexer::new(input);
+
+        let token = lexer.next();
+
+        assert_eq!(Token::Integer(value), token);
+    }
+
+    #[rstest]
+    #[case::truncated_hexadecimal("0x")]
+    #[case::truncated_hexadecimal("0X")]
+    fn bad_integer(#[case] input: &str) {
+        let mut lexer = Lexer::new(input);
+
+        let token = lexer.next();
+
+        match token {
+            Token::Invalid(_) => {}
             _ => assert!(false, "Lexer did not return error, got {}", token)
         }
     }

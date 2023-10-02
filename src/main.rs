@@ -11,8 +11,9 @@ impl fmt::Display for Token {
             Token::Abstract => write!(f, "<Keyword|abstract>"),
             Token::Comma => write!(f, "<Comma>"),
             Token::EOF => write!(f, "<EOF>"),
-            Token::Error(msg) => write!(f, "<ERROR: {}", msg),
+            Token::Invalid(msg) => write!(f, "<ERROR: {}", msg),
             Token::Identifier(id) => write!(f, "<Identifier, {}>", id),
+            Token::Integer(value) => write!(f, "<Integer | {}>", value),
         }
     }
 }
