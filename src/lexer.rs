@@ -17,7 +17,6 @@ pub(crate) enum TokenType {
     Integer(i64),
 }
 
-#[allow(dead_code)]
 pub(crate) struct Token {
     pub(crate) token_type: TokenType,
     pub(crate) literal: String,
