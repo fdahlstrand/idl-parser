@@ -5,7 +5,7 @@ pub(crate) struct Lexer {
 }
 
 #[derive(PartialEq, Debug)]
-pub(crate) enum Token {
+pub(crate) enum TokenType {
     Abstract,
     Comma,
     EOF,
@@ -14,7 +14,15 @@ pub(crate) enum Token {
     Integer(i64),
 }
 
-const KEYWORDS: [(&str, Token); 1] = [("abstract", Token::Abstract)];
+#[allow(dead_code)]
+pub(crate) struct Token {
+    pub(crate) token_type: TokenType,
+    pub(crate) literal: String,
+    pub(crate) line: usize,
+    pub(crate) column: usize,
+}
+
+const KEYWORDS: [(&str, TokenType); 1] = [("abstract", TokenType::Abstract)];
 
 
 impl Lexer {
@@ -35,14 +43,23 @@ impl Lexer {
     pub fn next(&mut self) -> Token {
         self.skip_whitespace();
         match self.ch {
-            '\0' => Token::EOF,
+            '\0' => self.emit(TokenType::EOF),
             ',' => {
                 self.consume();
-                Token::Comma
+                self.emit(TokenType::Comma)
             }
             _ if self.ch.is_ascii_digit() => self.number(),
             _ if self.ch.is_ascii_alphabetic() || self.ch == '_' => self.identifier(),
-            ch => Token::Invalid(format!("Unexpected character '{}'", ch)),
+            ch => self.emit(TokenType::Invalid(format!("Unexpected character '{}'", ch))),
+        }
+    }
+
+    fn emit(&self, t: TokenType) -> Token {
+        Token {
+            token_type: t,
+            literal: "".to_string(),
+            line: 0,
+            column: 0,
         }
     }
 
@@ -68,20 +85,20 @@ impl Lexer {
         let ident = self.read_identifier();
 
         if ident.is_empty() {
-            return Token::Invalid("Invalid Identifier".to_string());
+            return self.emit(TokenType::Invalid("Invalid Identifier".to_string()));
         }
 
         if match_keyword {
             match self.lookup_keyword(&ident) {
-                None => Token::Identifier(ident),
-                Some(t) => t
+                None => self.emit(TokenType::Identifier(ident)),
+                Some(t) => self.emit(t)
             }
         } else {
-            Token::Identifier(ident)
+            self.emit(TokenType::Identifier(ident))
         }
     }
 
-    fn lookup_keyword(&mut self, ident: &str) -> Option<Token> {
+    fn lookup_keyword(&mut self, ident: &str) -> Option<TokenType> {
         let lowercase_ident = ident.to_lowercase();
         for (id, token) in KEYWORDS {
             if id == lowercase_ident {
@@ -124,7 +141,7 @@ impl Lexer {
             self.consume();
 
             if !self.ch.is_ascii_hexdigit() {
-                return Token::Invalid("Invalid hexadecimal literal".to_string());
+                return self.emit(TokenType::Invalid("Invalid hexadecimal literal".to_string()));
             }
 
             loop {
@@ -137,7 +154,7 @@ impl Lexer {
                 }
             }
 
-            return Token::Integer(value);
+            return self.emit(TokenType::Integer(value));
         } else if self.ch == '0' {
             let mut value: i64 = 0;
             loop {
@@ -149,7 +166,7 @@ impl Lexer {
                 }
             }
 
-            return Token::Integer(value);
+            return self.emit(TokenType::Integer(value));
         } else {
             loop {
                 literal.push(self.ch);
@@ -161,9 +178,9 @@ impl Lexer {
         }
 
         match literal.parse::<i64>() {
-            Ok(value) => Token::Integer(value),
+            Ok(value) => self.emit(TokenType::Integer(value)),
             // This should be an internal lexer error.
-            Err(_) => Token::Invalid(format!("Bad Integer '{}'", literal)),
+            Err(_) => self.emit(TokenType::Invalid(format!("Bad Integer '{}'", literal))),
         }
     }
 
@@ -189,7 +206,7 @@ mod tests {
 
         let token = lexer.next();
 
-        assert_eq!(Token::EOF, token);
+        assert_eq!(TokenType::EOF, token.token_type);
     }
 
     #[rstest]
@@ -203,7 +220,7 @@ mod tests {
 
         let token = lexer.identifier();
 
-        assert_eq!(Token::Identifier(input.to_string()), token);
+        assert_eq!(TokenType::Identifier(input.to_string()), token.token_type);
     }
 
     #[rstest]
@@ -213,7 +230,7 @@ mod tests {
 
         let token = lexer.identifier();
 
-        assert_ne!(Token::Identifier(input.to_string()), token);
+        assert_ne!(TokenType::Identifier(input.to_string()), token.token_type);
     }
 
     #[rstest]
@@ -224,7 +241,7 @@ mod tests {
 
         let token = lexer.identifier();
 
-        assert_eq!(Token::Identifier(input[1..].to_string()), token);
+        assert_eq!(TokenType::Identifier(input[1..].to_string()), token.token_type);
     }
 
     #[rstest]
@@ -236,7 +253,7 @@ mod tests {
 
         let token = lexer.identifier();
 
-        assert_ne!(Token::Identifier(input[1..].to_string()), token);
+        assert_ne!(TokenType::Identifier(input[1..].to_string()), token.token_type);
     }
 
     #[rstest]
@@ -245,17 +262,17 @@ mod tests {
 
         let token = lexer.identifier();
 
-        assert_eq!(Token::Abstract, token);
+        assert_eq!(TokenType::Abstract, token.token_type);
     }
 
     #[rstest]
-    #[case::comma(",", Token::Comma)]
-    fn punctuation(#[case] input: &str, #[case] expected: Token) {
+    #[case::comma(",", TokenType::Comma)]
+    fn punctuation(#[case] input: &str, #[case] expected: TokenType) {
         let mut lexer = Lexer::new(input);
 
         let token = lexer.next();
 
-        assert_eq!(expected, token);
+        assert_eq!(expected, token.token_type);
     }
 
     #[rstest]
@@ -265,8 +282,8 @@ mod tests {
 
         let token = lexer.next();
 
-        match token {
-            Token::Invalid(_) => {}
+        match token.token_type {
+            TokenType::Invalid(_) => {}
             _ => assert!(false, "Lexer did not return error, got {}", token)
         }
     }
@@ -283,7 +300,7 @@ mod tests {
 
         let token = lexer.next();
 
-        assert_eq!(Token::Integer(value), token);
+        assert_eq!(TokenType::Integer(value), token.token_type);
     }
 
     #[rstest]
@@ -294,8 +311,8 @@ mod tests {
 
         let token = lexer.next();
 
-        match token {
-            Token::Invalid(_) => {}
+        match token.token_type {
+            TokenType::Invalid(_) => {}
             _ => assert!(false, "Lexer did not return error, got {}", token)
         }
     }
