@@ -7,20 +7,22 @@ mod lexer;
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match &self.token_type {
-            TokenType::Abstract => write!(f, "<Keyword|abstract>"),
-            TokenType::Comma => write!(f, "<Comma>"),
-            TokenType::EOF => write!(f, "<EOF>"),
-            TokenType::Invalid(msg) => write!(f, "<ERROR: {}", msg),
-            TokenType::Identifier(id) => write!(f, "<Identifier, {}>", id),
-            TokenType::Integer(value) => write!(f, "<Integer | {}>", value),
-        }
+        let name = match &self.token_type {
+            TokenType::Abstract => "abstract".to_string(),
+            TokenType::Comma => "comma".to_string(),
+            TokenType::EOF => "EOF".to_string(),
+            TokenType::Invalid(msg) => format!("INVALID {}", msg),
+            TokenType::Identifier(id) => format!("identifier({})>", id),
+            TokenType::Integer(value) => format!("integer({})", value),
+        };
+
+        write!(f, "<{} @{}:{} = \"{}\">", name, self.line, self.column, self.literal)
     }
 }
 
 
 fn main() {
-    let mut lexer = Lexer::new("Hello, world");
+    let mut lexer = Lexer::new("Hello, world\nAgain");
 
     loop {
         let t = lexer.next();

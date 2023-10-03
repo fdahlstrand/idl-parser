@@ -2,6 +2,9 @@ pub(crate) struct Lexer {
     input: Vec<char>,
     pos: usize,
     ch: char,
+    literal: String,
+    line: usize,
+    column: usize,
 }
 
 #[derive(PartialEq, Debug)]
@@ -31,6 +34,9 @@ impl Lexer {
             input: src.chars().collect(),
             pos: 0,
             ch: '\0',
+            literal: "".to_string(),
+            line: 1,
+            column: 1,
         };
 
         if lexer.input.len() > 0 {
@@ -54,22 +60,37 @@ impl Lexer {
         }
     }
 
-    fn emit(&self, t: TokenType) -> Token {
-        Token {
+    fn emit(&mut self, t: TokenType) -> Token {
+        let token = Token {
             token_type: t,
-            literal: "".to_string(),
-            line: 0,
-            column: 0,
-        }
+            literal: self.literal.clone(),
+            line: self.line,
+            column: self.column - self.literal.len(),
+        };
+
+        self.literal = "".to_string();
+
+        token
     }
 
-    fn consume(&mut self) {
+    fn advance(&mut self) {
+        if self.ch == '\n' {
+            self.line += 1;
+            self.column = 1;
+        } else {
+            self.column += 1;
+        }
         self.pos += 1;
         if self.pos >= self.input.len() {
             self.ch = '\0';
         } else {
             self.ch = self.input[self.pos];
         }
+    }
+
+    fn consume(&mut self) {
+        self.literal.push(self.ch);
+        self.advance();
     }
 
     fn peek(&mut self) -> Option<char> {
@@ -130,14 +151,9 @@ impl Lexer {
     }
 
     fn number(&mut self) -> Token {
-        let mut literal = "".to_string();
-
+        let mut value: i64 = 0;
         if self.ch == '0' && (self.peek() == Some('x') || self.peek() == Some('X')) {
-            let mut value: i64 = 0;
-
-            literal.push(self.ch);
             self.consume();
-            literal.push(self.ch);
             self.consume();
 
             if !self.ch.is_ascii_hexdigit() {
@@ -145,7 +161,6 @@ impl Lexer {
             }
 
             loop {
-                literal.push(self.ch);
                 value = value * 16 + i64::from(self.ch.to_digit(16).unwrap());
                 self.consume();
 
@@ -153,23 +168,17 @@ impl Lexer {
                     break;
                 }
             }
-
-            return self.emit(TokenType::Integer(value));
         } else if self.ch == '0' {
-            let mut value: i64 = 0;
             loop {
-                literal.push(self.ch);
                 value = value * 8 + i64::from(self.ch.to_digit(10).unwrap());
                 self.consume();
                 if !('0' <= self.ch && self.ch <= '7') {
                     break;
                 }
             }
-
-            return self.emit(TokenType::Integer(value));
         } else {
             loop {
-                literal.push(self.ch);
+                value = value * 10 + i64::from(self.ch.to_digit(10).unwrap());
                 self.consume();
                 if !self.ch.is_ascii_digit() {
                     break;
@@ -177,16 +186,12 @@ impl Lexer {
             }
         }
 
-        match literal.parse::<i64>() {
-            Ok(value) => self.emit(TokenType::Integer(value)),
-            // This should be an internal lexer error.
-            Err(_) => self.emit(TokenType::Invalid(format!("Bad Integer '{}'", literal))),
-        }
+        self.emit(TokenType::Integer(value))
     }
 
     fn skip_whitespace(&mut self) {
         while self.ch.is_ascii_whitespace() {
-            self.consume();
+            self.advance();
         }
     }
 }
