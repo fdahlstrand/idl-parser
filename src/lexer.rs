@@ -3,8 +3,8 @@ pub(crate) struct Lexer {
     pos: usize,
     ch: char,
     literal: String,
-    line: usize,
-    column: usize,
+    start: Position,
+    current: Position,
 }
 
 #[derive(PartialEq, Debug)]
@@ -17,11 +17,26 @@ pub(crate) enum TokenType {
     Integer(i64),
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) struct Position {
+    pub(crate) line: usize,
+    pub(crate) column: usize,
+}
+
+impl Clone for Position {
+    fn clone(&self) -> Self {
+        Position {
+            line: self.line,
+            column: self.column,
+        }
+    }
+}
+
 pub(crate) struct Token {
     pub(crate) token_type: TokenType,
     pub(crate) literal: String,
-    pub(crate) line: usize,
-    pub(crate) column: usize,
+    pub(crate) start: Position,
+    pub(crate) end: Position,
 }
 
 const KEYWORDS: [(&str, TokenType); 1] = [("abstract", TokenType::Abstract)];
@@ -34,8 +49,14 @@ impl Lexer {
             pos: 0,
             ch: '\0',
             literal: "".to_string(),
-            line: 1,
-            column: 1,
+            start: Position {
+                line: 1,
+                column: 1,
+            },
+            current: Position {
+                line: 1,
+                column: 1,
+            },
         };
 
         if lexer.input.len() > 0 {
@@ -48,14 +69,22 @@ impl Lexer {
     pub fn next(&mut self) -> Token {
         self.skip_whitespace();
         match self.ch {
-            '\0' => self.emit(TokenType::EOF),
+            '\0' => {
+                self.mark_start();
+                self.advance();
+                self.emit(TokenType::EOF)
+            }
             ',' => {
+                self.mark_start();
                 self.consume();
                 self.emit(TokenType::Comma)
             }
             _ if self.ch.is_ascii_digit() => self.number(),
             _ if self.ch.is_ascii_alphabetic() || self.ch == '_' => self.identifier(),
-            ch => self.emit(TokenType::Invalid(format!("Unexpected character '{}'", ch))),
+            ch => {
+                self.mark_start();
+                self.emit(TokenType::Invalid(format!("Unexpected character '{}'", ch)))
+            }
         }
     }
 
@@ -63,8 +92,11 @@ impl Lexer {
         let token = Token {
             token_type: t,
             literal: self.literal.clone(),
-            line: self.line,
-            column: self.column - self.literal.len(),
+            start: self.start.clone(),
+            end: Position {
+                line: self.current.line,
+                column: self.current.column - 1,
+            },
         };
 
         self.literal = "".to_string();
@@ -72,12 +104,16 @@ impl Lexer {
         token
     }
 
+    fn mark_start(&mut self) {
+        self.start = self.current.clone();
+    }
+
     fn advance(&mut self) {
         if self.ch == '\n' {
-            self.line += 1;
-            self.column = 1;
+            self.current.line += 1;
+            self.current.column = 1;
         } else {
-            self.column += 1;
+            self.current.column += 1;
         }
         self.pos += 1;
         if self.pos >= self.input.len() {
@@ -132,6 +168,9 @@ impl Lexer {
 
     fn read_identifier(&mut self) -> String {
         let mut ident = "".to_string();
+
+        self.mark_start();
+
         if self.ch == '_' {
             self.consume();
         }
@@ -152,6 +191,7 @@ impl Lexer {
     fn number(&mut self) -> Token {
         let mut value: i64 = 0;
         if self.ch == '0' && (self.peek() == Some('x') || self.peek() == Some('X')) {
+            self.mark_start();
             self.consume();
             self.consume();
 
@@ -168,6 +208,7 @@ impl Lexer {
                 }
             }
         } else if self.ch == '0' {
+            self.mark_start();
             loop {
                 value = value * 8 + i64::from(self.ch.to_digit(10).unwrap());
                 self.consume();
@@ -176,6 +217,7 @@ impl Lexer {
                 }
             }
         } else {
+            self.mark_start();
             loop {
                 value = value * 10 + i64::from(self.ch.to_digit(10).unwrap());
                 self.consume();
@@ -200,6 +242,21 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+
+    #[rstest]
+    #[case::empty_input("", Position {line: 1, column: 1}, Position {line: 1, column: 1})]
+    #[case::single_character("a", Position {line: 1, column: 1}, Position {line: 1, column: 1})]
+    #[case::multiple_characters("identifier", Position {line: 1, column: 1}, Position {line: 1, column: 10})]
+    #[case::multiple_lines("\n\nidentifier", Position {line: 3, column: 1}, Position {line: 3, column: 10})]
+    #[case::whitespace_only("  \t", Position {line: 1, column: 4}, Position {line: 1, column: 4})]
+    fn position(#[case] input: &str, #[case] start: Position, #[case] end: Position) {
+        let mut lexer = Lexer::new(input);
+
+        let token = lexer.next();
+
+        assert_eq!(token.start, start, "unexpected start of token");
+        assert_eq!(token.end, end, "unexpected end of token");
+    }
 
     #[rstest]
     #[case::empty_input("")]

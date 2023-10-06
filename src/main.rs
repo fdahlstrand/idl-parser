@@ -1,9 +1,15 @@
 use std::fmt;
 use std::fmt::Formatter;
 
-use crate::lexer::{Lexer, Token, TokenType};
+use crate::lexer::{Lexer, Position, Token, TokenType};
 
 mod lexer;
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "@{}:{}", self.line, self.column)
+    }
+}
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -16,13 +22,13 @@ impl fmt::Display for Token {
             TokenType::Integer(value) => format!("integer({})", value),
         };
 
-        write!(f, "<{} @{}:{} = \"{}\">", name, self.line, self.column, self.literal)
+        write!(f, "<{} {}-{} = \"{}\">", name, self.start, self.end, self.literal)
     }
 }
 
 
 fn main() {
-    let mut lexer = Lexer::new("Hello, world\nAgain");
+    let mut lexer = Lexer::new("Hello, world\nAgain is abstract");
 
     loop {
         let t = lexer.next();
