@@ -18,63 +18,42 @@ func New(input string) *Lexer {
 	return l
 }
 
+var punctation = map[rune]token.TokenType{
+	';':  token.SEMICOLON,
+	'{':  token.LCURLY,
+	'}':  token.RCURLY,
+	':':  token.COLON,
+	',':  token.COMMA,
+	'=':  token.EQUALS,
+	'+':  token.PLUS,
+	'-':  token.MINUS,
+	'(':  token.LPAREN,
+	')':  token.RPAREN,
+	'<':  token.LT,
+	'>':  token.GT,
+	'[':  token.LBRACKET,
+	']':  token.RBRACKET,
+	'\'': token.SINGLEQUOTE,
+	'"':  token.DOUBLEQUOTE,
+	'\\': token.BACKSLASH,
+	'|':  token.VERTBAR,
+	'^':  token.CARET,
+	'&':  token.AMPERSAND,
+	'*':  token.ASTERISK,
+	'/':  token.SLASH,
+	'%':  token.PERCENT,
+	'~':  token.TILDE,
+	'@':  token.AT,
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
-	switch l.ch {
-	case ';':
-		tok = newToken(token.SEMICOLON, ";")
-	case '{':
-		tok = newToken(token.LCURLY, "{")
-	case '}':
-		tok = newToken(token.RCURLY, "}")
-	case ':':
-		tok = newToken(token.COLON, ":")
-	case ',':
-		tok = newToken(token.COMMA, ",")
-	case '=':
-		tok = newToken(token.EQUALS, "=")
-	case '+':
-		tok = newToken(token.PLUS, "+")
-	case '-':
-		tok = newToken(token.MINUS, "-")
-	case '(':
-		tok = newToken(token.LPAREN, "(")
-	case ')':
-		tok = newToken(token.RPAREN, ")")
-	case '<':
-		tok = newToken(token.LT, "<")
-	case '>':
-		tok = newToken(token.GT, ">")
-	case '[':
-		tok = newToken(token.LBRACKET, "[")
-	case ']':
-		tok = newToken(token.RBRACKET, "]")
-	case '\'':
-		tok = newToken(token.SINGLEQUOTE, "'")
-	case '"':
-		tok = newToken(token.DOUBLEQUOTE, "\"")
-	case '\\':
-		tok = newToken(token.BACKSLASH, "\\")
-	case '|':
-		tok = newToken(token.VERTBAR, "|")
-	case '^':
-		tok = newToken(token.CARET, "^")
-	case '&':
-		tok = newToken(token.AMPERSAND, "&")
-	case '*':
-		tok = newToken(token.ASTERISK, "*")
-	case '/':
-		tok = newToken(token.SLASH, "/")
-	case '%':
-		tok = newToken(token.PERCENT, "%")
-	case '~':
-		tok = newToken(token.TILDE, "~")
-	case '@':
-		tok = newToken(token.AT, "@")
-	case 0:
+	if tt, ok := punctation[l.ch]; ok {
+		tok = newToken(tt, string(l.ch))
+	} else if l.ch == 0 {
 		tok = newToken(token.EOF, "")
-	default:
+	} else {
 		tok = newToken(token.ILLEGAL, string(l.ch))
 	}
 
