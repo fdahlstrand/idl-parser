@@ -197,3 +197,37 @@ func TestKeyword(t *testing.T) {
 		}
 	}
 }
+
+func TestIdentifier(t *testing.T) {
+	tests := []struct {
+		input           string
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{"a", token.IDENTIFIER, "a"},
+		{"x8", token.IDENTIFIER, "x8"},
+		{"_abstract", token.IDENTIFIER, "abstract"},
+		{"_Y", token.IDENTIFIER, "Y"},
+		{"__bad", token.ILLEGAL, ""},
+		{"_0notgood", token.ILLEGAL, ""},
+	}
+
+	for _, test := range tests {
+		l := New(test.input)
+		tok := l.NextToken()
+		assertType(t, test.input, test.expectedType, tok.Type)
+		assertLiteral(t, test.input, test.expectedLiteral, tok.Literal)
+	}
+}
+
+func assertType(t *testing.T, input string, expected token.TokenType, actual token.TokenType) {
+	if expected != actual {
+		t.Fatalf("assertion failed '%s', expected=%+q, actual=%+q", input, expected, actual)
+	}
+}
+
+func assertLiteral(t *testing.T, input string, expected string, actual string) {
+	if expected != actual {
+		t.Fatalf("assertion failed '%s', expected='%s', actual='%s'", input, expected, actual)
+	}
+}

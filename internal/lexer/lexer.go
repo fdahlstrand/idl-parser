@@ -140,13 +140,20 @@ func (l *Lexer) NextToken() token.Token {
 
 	if tt, ok := punctation[l.ch]; ok {
 		tok = newToken(tt, string(l.ch))
-	} else if isStartOfIdent(l.ch) {
-		kw := l.readKeyword()
-		if tt, ok := keywords[kw]; ok {
-			tok = newToken(tt, kw)
+	} else if isAlpha(l.ch) {
+		ident := l.readIdentifier()
+		if tt, ok := keywords[ident]; ok {
+			tok = newToken(tt, ident)
 		} else {
-			println(kw)
-			tok = newToken(token.ILLEGAL, kw)
+			tok = newToken(token.IDENTIFIER, ident)
+		}
+	} else if l.ch == '_' {
+		l.readRune()
+		ident := l.readIdentifier()
+		if ident != "" {
+			tok = newToken(token.IDENTIFIER, ident)
+		} else {
+			tok = newToken(token.ILLEGAL, "")
 		}
 	} else if l.ch == 0 {
 		tok = newToken(token.EOF, "")
@@ -164,10 +171,14 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
-func (l *Lexer) readKeyword() string {
+func (l *Lexer) readIdentifier() string {
 	pos := l.pos
-	for isIdentChar(l.ch) {
+
+	if isAlpha(l.ch) {
 		l.readRune()
+		for isAlpha(l.ch) || isDigit(l.ch) || l.ch == '_' {
+			l.readRune()
+		}
 	}
 
 	return l.input[pos:l.pos]
@@ -190,12 +201,12 @@ func isWhitespace(ch rune) bool {
 	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\013'
 }
 
-func isStartOfIdent(ch rune) bool {
-	return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || (ch == '_')
+func isAlpha(ch rune) bool {
+	return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z')
 }
 
-func isIdentChar(ch rune) bool {
-	return isStartOfIdent(ch) || ('0' <= ch && ch <= '9')
+func isDigit(ch rune) bool {
+	return ('0' <= ch && ch <= '9')
 }
 
 func newToken(typ token.TokenType, lit string) token.Token {

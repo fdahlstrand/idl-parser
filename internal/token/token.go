@@ -11,7 +11,10 @@ const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 
-	// 7.2.4 - Keywords
+	// 7.2.3 Identifiers
+	IDENTIFIER = "IDENTIFIER"
+
+	// 7.2.4  Keywords
 	ABSTRACT    = "abstract"
 	ANY         = "any"
 	ALIAS       = "alias"
