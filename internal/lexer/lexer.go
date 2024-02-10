@@ -19,146 +19,90 @@ func New(input string) *Lexer {
 	return l
 }
 
-var punctation = map[rune]token.TokenType{
-	';':  token.SEMICOLON,
-	'{':  token.LCURLY,
-	'}':  token.RCURLY,
-	':':  token.COLON,
-	',':  token.COMMA,
-	'=':  token.EQUALS,
-	'+':  token.PLUS,
-	'-':  token.MINUS,
-	'(':  token.LPAREN,
-	')':  token.RPAREN,
-	'<':  token.LT,
-	'>':  token.GT,
-	'[':  token.LBRACKET,
-	']':  token.RBRACKET,
-	'\'': token.SINGLEQUOTE,
-	'"':  token.DOUBLEQUOTE,
-	'\\': token.BACKSLASH,
-	'|':  token.VERTBAR,
-	'^':  token.CARET,
-	'&':  token.AMPERSAND,
-	'*':  token.ASTERISK,
-	'/':  token.SLASH,
-	'%':  token.PERCENT,
-	'~':  token.TILDE,
-	'@':  token.AT,
-}
-
-var keywords = map[string]token.TokenType{
-	"abstract":    token.ABSTRACT,
-	"any":         token.ANY,
-	"alias":       token.ALIAS,
-	"attribute":   token.ATTRIBUTE,
-	"bitfield":    token.BITFIELD,
-	"bitmask":     token.BITMASK,
-	"bitset":      token.BITSET,
-	"boolean":     token.BOOLEAN,
-	"case":        token.CASE,
-	"char":        token.CHAR,
-	"component":   token.COMPONENT,
-	"connector":   token.CONNECTOR,
-	"const":       token.CONST,
-	"consumes":    token.CONSUMES,
-	"context":     token.CONTEXT,
-	"custom":      token.CUSTOM,
-	"default":     token.DEFAULT,
-	"double":      token.DOUBLE,
-	"exception":   token.EXCEPTION,
-	"emits":       token.EMITS,
-	"enum":        token.ENUM,
-	"eventtype":   token.EVENTTYPE,
-	"factory":     token.FACTORY,
-	"FALSE":       token.FALSE,
-	"finder":      token.FINDER,
-	"fixed":       token.FIXED,
-	"float":       token.FLOAT,
-	"getraises":   token.GETRAISES,
-	"home":        token.HOME,
-	"import":      token.IMPORT,
-	"in":          token.IN,
-	"inout":       token.INOUT,
-	"interface":   token.INTERFACE,
-	"local":       token.LOCAL,
-	"long":        token.LONG,
-	"manages":     token.MANAGES,
-	"map":         token.MAP,
-	"mirrorport":  token.MIRRORPORT,
-	"module":      token.MODULE,
-	"multiple":    token.MULTIPLE,
-	"native":      token.NATIVE,
-	"Object":      token.OBJECT,
-	"octet":       token.OCTET,
-	"oneway":      token.ONEWAY,
-	"out":         token.OUT,
-	"primarykey":  token.PRIMARYKEY,
-	"private":     token.PRIVATE,
-	"port":        token.PORT,
-	"porttype":    token.PORTTYPE,
-	"provides":    token.PROVIDES,
-	"public":      token.PUBLIC,
-	"publishes":   token.PUBLISHES,
-	"raises":      token.RAISES,
-	"readonly":    token.READONLY,
-	"setraises":   token.SETRAISES,
-	"sequence":    token.SEQUENCE,
-	"short":       token.SHORT,
-	"string":      token.STRING,
-	"struct":      token.STRUCT,
-	"supports":    token.SUPPORTS,
-	"switch":      token.SWITCH,
-	"TRUE":        token.TRUE,
-	"truncatable": token.TRUNCATABLE,
-	"typedef":     token.TYPEDEF,
-	"typeid":      token.TYPEID,
-	"typename":    token.TYPENAME,
-	"typeprefix":  token.TYPEPREFIX,
-	"unsigned":    token.UNSIGNED,
-	"union":       token.UNION,
-	"uses":        token.USES,
-	"ValueBase":   token.VALUEBASE,
-	"valuetype":   token.VALUETYPE,
-	"void":        token.VOID,
-	"wchar":       token.WCHAR,
-	"wstring":     token.WSTRING,
-	"int8":        token.INT8,
-	"uint8":       token.UINT8,
-	"int16":       token.INT16,
-	"int32":       token.INT32,
-	"int64":       token.INT64,
-	"uint16":      token.UINT16,
-	"uint32":      token.UINT32,
-	"uint64":      token.UINT64,
-}
-
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	l.skipWhitespace()
 
-	if tt, ok := punctation[l.ch]; ok {
-		tok = newToken(tt, string(l.ch))
-	} else if isAlpha(l.ch) {
-		ident := l.readIdentifier()
-		if tt, ok := keywords[ident]; ok {
-			tok = newToken(tt, ident)
-		} else {
-			tok = newToken(token.IDENTIFIER, ident)
-		}
-	} else if l.ch == '_' {
+	switch l.ch {
+	case ';':
+		tok = newToken(token.SEMICOLON, string(l.ch))
+	case '{':
+		tok = newToken(token.LCURLY, string(l.ch))
+	case '}':
+		tok = newToken(token.RCURLY, string(l.ch))
+	case ',':
+		tok = newToken(token.COMMA, string(l.ch))
+	case '=':
+		tok = newToken(token.EQUALS, string(l.ch))
+	case '+':
+		tok = newToken(token.PLUS, string(l.ch))
+	case '-':
+		tok = newToken(token.MINUS, string(l.ch))
+	case '(':
+		tok = newToken(token.LPAREN, string(l.ch))
+	case ')':
+		tok = newToken(token.RPAREN, string(l.ch))
+	case '[':
+		tok = newToken(token.LBRACKET, string(l.ch))
+	case ']':
+		tok = newToken(token.RBRACKET, string(l.ch))
+	case '|':
+		tok = newToken(token.OR, string(l.ch))
+	case '^':
+		tok = newToken(token.XOR, string(l.ch))
+	case '&':
+		tok = newToken(token.AND, string(l.ch))
+	case '*':
+		tok = newToken(token.MUL, string(l.ch))
+	case '/':
+		tok = newToken(token.DIV, string(l.ch))
+	case '%':
+		tok = newToken(token.MODULO, string(l.ch))
+	case '~':
+		tok = newToken(token.NOT, string(l.ch))
+	case ':':
 		l.readRune()
-		ident := l.readIdentifier()
-		if ident != "" {
-			tok = newToken(token.IDENTIFIER, ident)
+		if l.ch == ':' {
+			tok = newToken(token.SCOPESEP, "::")
 		} else {
-			tok = newToken(token.ILLEGAL, "")
+			return newToken(token.COLON, ":")
 		}
-	} else if l.ch == 0 {
-		tok = newToken(token.EOF, "")
-	} else {
-		tok = newToken(token.ILLEGAL, string(l.ch))
+	case '<':
+		l.readRune()
+		if l.ch == '<' {
+			tok = newToken(token.LSHIFT, "<<")
+		} else {
+			return newToken(token.LT, "<")
+		}
+	case '>':
+		l.readRune()
+		if l.ch == '>' {
+			tok = newToken(token.RSHIFT, ">>")
+		} else {
+			return newToken(token.GT, ">")
+		}
+	default:
+		if isAlpha(l.ch) {
+			ident := l.readIdentifier()
+			if tt, ok := token.Keywords[ident]; ok {
+				tok = newToken(tt, ident)
+			} else {
+				tok = newToken(token.IDENTIFIER, ident)
+			}
+		} else if l.ch == '_' {
+			l.readRune()
+			ident := l.readIdentifier()
+			if ident != "" {
+				tok = newToken(token.IDENTIFIER, ident)
+			} else {
+				tok = newToken(token.ILLEGAL, "")
+			}
+		} else if l.ch == 0 {
+			tok = newToken(token.EOF, "")
+		} else {
+			tok = newToken(token.ILLEGAL, string(l.ch))
+		}
 	}
 
 	l.readRune()

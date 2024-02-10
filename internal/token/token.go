@@ -99,30 +99,117 @@ const (
 	UINT32      = "unit32"
 	UINT64      = "unit64"
 
-	// 7.2.5 - Punctation
-	SEMICOLON   = ";"
-	LCURLY      = "{"
-	RCURLY      = "}"
-	COLON       = ":"
-	COMMA       = ","
-	EQUALS      = "="
-	PLUS        = "+"
-	MINUS       = "-"
-	LPAREN      = "("
-	RPAREN      = ")"
-	LT          = "<"
-	GT          = ">"
-	LBRACKET    = "["
-	RBRACKET    = "]"
-	SINGLEQUOTE = "'"
-	DOUBLEQUOTE = "\""
-	BACKSLASH   = "\\"
-	VERTBAR     = "|"
-	CARET       = "^"
-	AMPERSAND   = "&"
-	ASTERISK    = "*"
-	SLASH       = "/"
-	PERCENT     = "%"
-	TILDE       = "~"
-	AT          = "@"
+	// Delimiters
+	SEMICOLON = ";"
+	LCURLY    = "{"
+	RCURLY    = "}"
+	COLON     = ":"
+	COMMA     = ","
+	LPAREN    = "("
+	RPAREN    = ")"
+	LT        = "<"
+	GT        = ">"
+	SCOPESEP  = "::"
+
+	// Operators
+	EQUALS   = "="
+	PLUS     = "+"
+	MINUS    = "-"
+	LBRACKET = "["
+	RBRACKET = "]"
+	OR       = "|"
+	XOR      = "^"
+	AND      = "&"
+	MUL      = "*"
+	DIV      = "/"
+	MODULO   = "%"
+	NOT      = "~"
+	LSHIFT   = "<<"
+	RSHIFT   = ">>"
 )
+
+var Keywords = map[string]TokenType{
+	"abstract":    ABSTRACT,
+	"any":         ANY,
+	"alias":       ALIAS,
+	"attribute":   ATTRIBUTE,
+	"bitfield":    BITFIELD,
+	"bitmask":     BITMASK,
+	"bitset":      BITSET,
+	"boolean":     BOOLEAN,
+	"case":        CASE,
+	"char":        CHAR,
+	"component":   COMPONENT,
+	"connector":   CONNECTOR,
+	"const":       CONST,
+	"consumes":    CONSUMES,
+	"context":     CONTEXT,
+	"custom":      CUSTOM,
+	"default":     DEFAULT,
+	"double":      DOUBLE,
+	"exception":   EXCEPTION,
+	"emits":       EMITS,
+	"enum":        ENUM,
+	"eventtype":   EVENTTYPE,
+	"factory":     FACTORY,
+	"FALSE":       FALSE,
+	"finder":      FINDER,
+	"fixed":       FIXED,
+	"float":       FLOAT,
+	"getraises":   GETRAISES,
+	"home":        HOME,
+	"import":      IMPORT,
+	"in":          IN,
+	"inout":       INOUT,
+	"interface":   INTERFACE,
+	"local":       LOCAL,
+	"long":        LONG,
+	"manages":     MANAGES,
+	"map":         MAP,
+	"mirrorport":  MIRRORPORT,
+	"module":      MODULE,
+	"multiple":    MULTIPLE,
+	"native":      NATIVE,
+	"Object":      OBJECT,
+	"octet":       OCTET,
+	"oneway":      ONEWAY,
+	"out":         OUT,
+	"primarykey":  PRIMARYKEY,
+	"private":     PRIVATE,
+	"port":        PORT,
+	"porttype":    PORTTYPE,
+	"provides":    PROVIDES,
+	"public":      PUBLIC,
+	"publishes":   PUBLISHES,
+	"raises":      RAISES,
+	"readonly":    READONLY,
+	"setraises":   SETRAISES,
+	"sequence":    SEQUENCE,
+	"short":       SHORT,
+	"string":      STRING,
+	"struct":      STRUCT,
+	"supports":    SUPPORTS,
+	"switch":      SWITCH,
+	"TRUE":        TRUE,
+	"truncatable": TRUNCATABLE,
+	"typedef":     TYPEDEF,
+	"typeid":      TYPEID,
+	"typename":    TYPENAME,
+	"typeprefix":  TYPEPREFIX,
+	"unsigned":    UNSIGNED,
+	"union":       UNION,
+	"uses":        USES,
+	"ValueBase":   VALUEBASE,
+	"valuetype":   VALUETYPE,
+	"void":        VOID,
+	"wchar":       WCHAR,
+	"wstring":     WSTRING,
+	"int8":        INT8,
+	"uint8":       UINT8,
+	"int16":       INT16,
+	"int32":       INT32,
+	"int64":       INT64,
+	"uint16":      UINT16,
+	"uint32":      UINT32,
+	"uint64":      UINT64,
+}
