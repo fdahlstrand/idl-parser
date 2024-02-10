@@ -55,7 +55,7 @@ var tests = []struct {
 	{"0X1a2f", token.INTEGER, "0X1a2f"},
 	{"01a2f", token.INTEGER, "01"},
 	{"9a2f", token.INTEGER, "9"},
-	{"0X", token.ILLEGAL, "0X"},
+	{"0X", token.INTEGER, "0"},
 
 	// Keywords
 	{"abstract", token.ABSTRACT, "abstract"},
