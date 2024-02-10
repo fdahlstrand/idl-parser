@@ -136,6 +136,8 @@ var keywords = map[string]token.TokenType{
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
+	l.skipWhitespace()
+
 	if tt, ok := punctation[l.ch]; ok {
 		tok = newToken(tt, string(l.ch))
 	} else if isStartOfIdent(l.ch) {
@@ -154,6 +156,12 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.readRune()
 	return tok
+}
+
+func (l *Lexer) skipWhitespace() {
+	for isWhitespace(l.ch) {
+		l.readRune()
+	}
 }
 
 func (l *Lexer) readKeyword() string {
@@ -176,6 +184,10 @@ func (l *Lexer) readRune() {
 	}
 	l.pos = l.readPos
 	l.readPos += w
+}
+
+func isWhitespace(ch rune) bool {
+	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\013'
 }
 
 func isStartOfIdent(ch rune) bool {

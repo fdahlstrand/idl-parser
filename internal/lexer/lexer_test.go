@@ -67,91 +67,23 @@ func TestPunctation(t *testing.T) {
 }
 
 func TestKeyword(t *testing.T) {
-	inputs := []string{
-		"abstract",
-		"any",
-		"alias",
-		"attribute",
-		"bitfield",
-		"bitmask",
-		"bitset",
-		"boolean",
-		"case",
-		"char",
-		"component",
-		"connector",
-		"const",
-		"consumes",
-		"context",
-		"custom",
-		"default",
-		"double",
-		"exception",
-		"emits",
-		"enum",
-		"eventtype",
-		"factory",
-		"FALSE",
-		"finder",
-		"fixed",
-		"float",
-		"getraises",
-		"home",
-		"import",
-		"in",
-		"inout",
-		"interface",
-		"local",
-		"long",
-		"manages",
-		"map",
-		"mirrorport",
-		"module",
-		"multiple",
-		"native",
-		"Object",
-		"octet",
-		"oneway",
-		"out",
-		"primarykey",
-		"private",
-		"port",
-		"porttype",
-		"provides",
-		"public",
-		"publishes",
-		"raises",
-		"readonly",
-		"setraises",
-		"sequence",
-		"short",
-		"string",
-		"struct",
-		"supports",
-		"switch",
-		"TRUE",
-		"truncatable",
-		"typedef",
-		"typeid",
-		"typename",
-		"typeprefix",
-		"unsigned",
-		"union",
-		"uses",
-		"ValueBase",
-		"valuetype",
-		"void",
-		"wchar",
-		"wstring",
-		"int8",
-		"uint8",
-		"int16",
-		"int32",
-		"int64",
-		"uint16",
-		"uint32",
-		"uint64",
-	}
+	input := `abstract any alias attribute bitfield
+	          bitmask bitset boolean case char
+	          component connector const consumes context
+	          custom default double exception emits
+	          enum eventtype factory FALSE finder
+	          fixed float getraises home import
+	          in inout interface local long
+	          manages map mirrorport module multiple
+	          native Object octet oneway out
+	          primarykey private port porttype provides
+	          public publishes raises readonly setraises
+	          sequence short string struct supports 
+	          switch TRUE truncatable typedef typeid
+	          typename typeprefix unsigned union uses
+	          ValueBase valuetype void wchar wstring
+	          int8 uint8 int16 int32 int64
+	          uint16 uint32 uint64`
 
 	tests := []struct {
 		expectedType    token.TokenType
@@ -242,9 +174,8 @@ func TestKeyword(t *testing.T) {
 		{token.UINT64, "uint64"},
 	}
 
+	l := New(input)
 	for i, tt := range tests {
-		input := inputs[i]
-		l := New(input)
 		tok := l.NextToken()
 
 		if tok.Type != tt.expectedType {
