@@ -99,6 +99,9 @@ const (
 	UINT32      = "unit32"
 	UINT64      = "unit64"
 
+	// 7.2.6 Integer Literal
+	INTEGER = "INTEGER"
+
 	// Delimiters
 	SEMICOLON = ";"
 	LCURLY    = "{"

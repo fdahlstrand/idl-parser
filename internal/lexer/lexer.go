@@ -98,6 +98,27 @@ func (l *Lexer) NextToken() token.Token {
 			} else {
 				tok = newToken(token.ILLEGAL, "")
 			}
+		} else if l.ch == '0' {
+			l.readRune()
+			if isOctalDigit(l.ch) {
+				oct := l.readOctalInteger()
+				tok = newToken(token.INTEGER, "0"+oct)
+			} else if l.ch == 'x' || l.ch == 'X' {
+				prefix := "0" + string(l.ch)
+				l.readRune()
+
+				if isHexDigit(l.ch) {
+					hex := l.readHexInteger()
+					tok = newToken(token.INTEGER, prefix+hex)
+				} else {
+					tok = newToken(token.ILLEGAL, prefix)
+				}
+			} else {
+				return newToken(token.INTEGER, "0")
+			}
+		} else if isDigit(l.ch) {
+			dec := l.readDecimalInteger()
+			tok = newToken(token.INTEGER, dec)
 		} else if l.ch == 0 {
 			tok = newToken(token.EOF, "")
 		} else {
@@ -128,6 +149,36 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[pos:l.pos]
 }
 
+func (l *Lexer) readDecimalInteger() string {
+	pos := l.pos
+
+	for isDigit(l.ch) {
+		l.readRune()
+	}
+
+	return l.input[pos:l.pos]
+}
+
+func (l *Lexer) readOctalInteger() string {
+	pos := l.pos
+
+	for isOctalDigit(l.ch) {
+		l.readRune()
+	}
+
+	return l.input[pos:l.pos]
+}
+
+func (l *Lexer) readHexInteger() string {
+	pos := l.pos
+
+	for isHexDigit(l.ch) {
+		l.readRune()
+	}
+
+	return l.input[pos:l.pos]
+}
+
 func (l *Lexer) readRune() {
 	var w int = 0
 	if l.readPos < len(l.input) {
@@ -151,6 +202,14 @@ func isAlpha(ch rune) bool {
 
 func isDigit(ch rune) bool {
 	return ('0' <= ch && ch <= '9')
+}
+
+func isOctalDigit(ch rune) bool {
+	return ('0' <= ch && ch <= '7')
+}
+
+func isHexDigit(ch rune) bool {
+	return ('0' <= ch && ch <= '9') || ('A' <= ch && ch <= 'F') || ('a' <= ch && ch <= 'f')
 }
 
 func newToken(typ token.TokenType, lit string) token.Token {
