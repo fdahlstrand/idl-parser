@@ -137,26 +137,37 @@ func TestSingleToken(t *testing.T) {
 	for _, test := range tests {
 		l := New(test.input)
 		tok := l.NextToken()
-		assertType(t, test.input, test.expectedType, tok.Type)
-		assertLiteral(t, test.input, test.expectedLiteral, tok.Literal)
-	}
-}
-
-func assertType(t *testing.T, input string, expected token.TokenType, actual token.TokenType) {
-	if expected != actual {
-		t.Fatalf(
-			"token type assertion failed '%s', expected=%+q, actual=%+q",
-			input,
-			expected,
-			actual,
+		assertToken(
+			t,
+			test.input,
+			token.Token{Type: test.expectedType, Literal: test.expectedLiteral},
+			tok,
 		)
 	}
 }
 
-func assertLiteral(t *testing.T, input string, expected string, actual string) {
+func TestWhitespace(t *testing.T) {
+	input := "module\tfoo\n   {\r\n\013}"
+
+	expectedTokens := []token.Token{
+		{Type: token.MODULE, Literal: "module"},
+		{Type: token.IDENTIFIER, Literal: "foo"},
+		{Type: token.LCURLY, Literal: "{"},
+		{Type: token.RCURLY, Literal: "}"},
+		{Type: token.EOF, Literal: ""},
+	}
+
+	l := New(input)
+	for _, et := range expectedTokens {
+		tok := l.NextToken()
+		assertToken(t, input, et, tok)
+	}
+}
+
+func assertToken(t *testing.T, input string, expected token.Token, actual token.Token) {
 	if expected != actual {
 		t.Fatalf(
-			"token literal assertion failed '%s', expected='%s', actual='%s'",
+			"token type assertion failed '%s', expected=%+q, actual=%+q",
 			input,
 			expected,
 			actual,
