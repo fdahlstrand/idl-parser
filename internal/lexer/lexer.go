@@ -80,12 +80,23 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.GT, ">")
 
 		// == CHARACTER LITERALS ============================================
-	} else if l.ch[0] == '\'' {
-		l.advance(1)
-		ch_lit, err := l.readCharLiteral()
+	} else if l.ch[0] == '\'' || (l.ch[0] == 'L' && l.ch[1] == '\'') {
+		wide := l.ch[0] == 'L'
+
+		if wide {
+			l.advance(2)
+		} else {
+			l.advance(1)
+		}
+
+		ch_lit, err := l.readCharLiteral(wide)
 		if l.ch[0] == '\'' {
 			l.advance(1)
-			tok = newToken(token.CHAR_LITERAL, ch_lit)
+			if wide {
+				tok = newToken(token.WCHAR_LITERAL, ch_lit)
+			} else {
+				tok = newToken(token.CHAR_LITERAL, ch_lit)
+			}
 		} else {
 			if err == nil {
 				err = fmt.Errorf("Syntax Error: Character literal not terminated")
@@ -184,11 +195,11 @@ func (l *Lexer) readHexInteger() string {
 	return l.input[pos:l.pos[0]]
 }
 
-func (l *Lexer) readCharLiteral() (lit string, err error) {
+func (l *Lexer) readCharLiteral(wide bool) (lit string, err error) {
 	var ch_lit string
 	if l.ch[0] == '\\' {
 		l.advance(1)
-		ch_lit, err = l.readEscapeCharacter()
+		ch_lit, err = l.readEscapeCharacter(wide)
 		if err != nil {
 			return "", err
 		}
@@ -199,7 +210,7 @@ func (l *Lexer) readCharLiteral() (lit string, err error) {
 	return ch_lit, nil
 }
 
-func (l *Lexer) readEscapeCharacter() (lit string, err error) {
+func (l *Lexer) readEscapeCharacter(wide bool) (lit string, err error) {
 	escapes := map[rune]string{
 		'n':  "\n",
 		't':  "\t",
@@ -224,7 +235,19 @@ func (l *Lexer) readEscapeCharacter() (lit string, err error) {
 			for n := 0; n < 2 && isHexDigit(l.ch[0]); n++ {
 				l.advance(1)
 			}
-			code, _ := strconv.ParseInt(l.input[pos:l.pos[0]], 16, 8)
+			code, _ := strconv.ParseUint(l.input[pos:l.pos[0]], 16, 16)
+			return string(rune(code)), nil
+		} else {
+			return "", fmt.Errorf("Syntax Error: Illegal character '%c' in escape sequence", l.ch[0])
+		}
+	} else if wide && l.ch[0] == 'u' {
+		l.advance(1)
+		if isHexDigit(l.ch[0]) {
+			pos := l.pos[0]
+			for n := 0; n < 4 && isHexDigit(l.ch[0]); n++ {
+				l.advance(1)
+			}
+			code, _ := strconv.ParseUint(l.input[pos:l.pos[0]], 16, 16)
 			return string(rune(code)), nil
 		} else {
 			return "", fmt.Errorf("Syntax Error: Illegal character '%c' in escape sequence", l.ch[0])
@@ -234,7 +257,7 @@ func (l *Lexer) readEscapeCharacter() (lit string, err error) {
 		for n := 0; n < 3 && isOctalDigit(l.ch[0]); n++ {
 			l.advance(1)
 		}
-		code, _ := strconv.ParseInt(l.input[pos:l.pos[0]], 8, 8)
+		code, _ := strconv.ParseUint(l.input[pos:l.pos[0]], 8, 16)
 		return string(rune(code)), nil
 	} else {
 		return "", fmt.Errorf("Syntax Error: Unknown escape sequence '\\%c'", l.ch[0])

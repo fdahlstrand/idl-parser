@@ -82,6 +82,15 @@ var tests = []struct {
 	{"'\\172'", token.CHAR_LITERAL, "z"},
 	{"'\\4135'", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
 	{"'\\42m'", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
+	{"L'A'", token.WCHAR_LITERAL, "A"},
+	{"L'\\ud'", token.WCHAR_LITERAL, "\r"},
+	{"L'\\u58'", token.WCHAR_LITERAL, "X"},
+	{"L'\\u14B'", token.WCHAR_LITERAL, "\u014b"},
+	{"L'\\u2713'", token.WCHAR_LITERAL, "✓"},
+	{"L'\\u42432'", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
+	{"L'\\u42U'", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
+	{"L'\\up'", token.ILLEGAL, "Syntax Error: Illegal character 'p' in escape sequence"},
+	{"'\\u14B'", token.ILLEGAL, "Syntax Error: Unknown escape sequence '\\u'"},
 
 	// Keywords
 	{"abstract", token.ABSTRACT, "abstract"},
