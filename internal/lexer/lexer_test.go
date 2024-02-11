@@ -47,7 +47,7 @@ var tests = []struct {
 	{"__bad", token.ILLEGAL, ""},
 	{"_0notgood", token.ILLEGAL, ""},
 
-	// Integers
+	// Integer Literals
 	{"0", token.INTEGER, "0"},
 	{"122", token.INTEGER, "122"},
 	{"012", token.INTEGER, "012"},
@@ -56,6 +56,32 @@ var tests = []struct {
 	{"01a2f", token.INTEGER, "01"},
 	{"9a2f", token.INTEGER, "9"},
 	{"0X", token.INTEGER, "0"},
+
+	// Chracter Literals
+	{"'a'", token.CHAR_LITERAL, "a"},
+	{"''", token.CHAR_LITERAL, ""},
+	{"'a", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
+	{"'\\n'", token.CHAR_LITERAL, "\n"},
+	{"'\\t'", token.CHAR_LITERAL, "\t"},
+	{"'\\v'", token.CHAR_LITERAL, "\v"},
+	{"'\\b'", token.CHAR_LITERAL, "\b"},
+	{"'\\r'", token.CHAR_LITERAL, "\r"},
+	{"'\\f'", token.CHAR_LITERAL, "\f"},
+	{"'\\a'", token.CHAR_LITERAL, "\a"},
+	{"'\\\\'", token.CHAR_LITERAL, "\\"},
+	{"'\\?'", token.CHAR_LITERAL, "?"},
+	{"'\\''", token.CHAR_LITERAL, "'"},
+	{"'\\\"'", token.CHAR_LITERAL, "\""},
+	{"'\\m'", token.ILLEGAL, "Syntax Error: Unknown escape sequence '\\m'"},
+	{"'\\xa'", token.CHAR_LITERAL, "\n"},
+	{"'\\x41'", token.CHAR_LITERAL, "A"},
+	{"'\\x413'", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
+	{"'\\xz'", token.ILLEGAL, "Syntax Error: Illegal character 'z' in escape sequence"},
+	{"'\\0'", token.CHAR_LITERAL, "\x00"},
+	{"'\\42'", token.CHAR_LITERAL, "\""},
+	{"'\\172'", token.CHAR_LITERAL, "z"},
+	{"'\\4135'", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
+	{"'\\42m'", token.ILLEGAL, "Syntax Error: Character literal not terminated"},
 
 	// Keywords
 	{"abstract", token.ABSTRACT, "abstract"},

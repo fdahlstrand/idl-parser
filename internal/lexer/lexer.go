@@ -1,6 +1,8 @@
 package lexer
 
 import (
+	"fmt"
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/fdahlstrand/idl-parser/internal/token"
@@ -24,6 +26,7 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.skipWhitespace()
 
+	// == SEPARATORS & OPERATORS ============================================
 	if l.ch[0] == ';' {
 		tok = newToken(token.SEMICOLON, string(l.ch[0]))
 	} else if l.ch[0] == '{' {
@@ -75,6 +78,22 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LT, "<")
 	} else if l.ch[0] == '>' {
 		tok = newToken(token.GT, ">")
+
+		// == CHARACTER LITERALS ============================================
+	} else if l.ch[0] == '\'' {
+		l.advance(1)
+		ch_lit, err := l.readCharLiteral()
+		if l.ch[0] == '\'' {
+			l.advance(1)
+			tok = newToken(token.CHAR_LITERAL, ch_lit)
+		} else {
+			if err == nil {
+				err = fmt.Errorf("Syntax Error: Character literal not terminated")
+			}
+			tok = newToken(token.ILLEGAL, err.Error())
+		}
+
+		// == IDENTIFIERS & KEYWORDS ========================================
 	} else if isAlpha(l.ch[0]) {
 		ident := l.readIdentifier()
 		if tt, ok := token.Keywords[ident]; ok {
@@ -90,6 +109,7 @@ func (l *Lexer) NextToken() token.Token {
 		} else {
 			tok = newToken(token.ILLEGAL, "")
 		}
+		// == INTEGER LITERALS ==============================================
 	} else if l.ch[0] == '0' && isOctalDigit(l.ch[1]) {
 		oct := l.readOctalInteger()
 		tok = newToken(token.INTEGER, oct)
@@ -101,8 +121,12 @@ func (l *Lexer) NextToken() token.Token {
 	} else if isDigit(l.ch[0]) {
 		dec := l.readDecimalInteger()
 		tok = newToken(token.INTEGER, dec)
+
+		// == END OF FILE ===================================================
 	} else if l.ch[0] == 0 {
 		tok = newToken(token.EOF, "")
+
+		// == SYNTAX ERROR ==================================================
 	} else {
 		tok = newToken(token.ILLEGAL, string(l.ch[0]))
 	}
@@ -158,6 +182,63 @@ func (l *Lexer) readHexInteger() string {
 	}
 
 	return l.input[pos:l.pos[0]]
+}
+
+func (l *Lexer) readCharLiteral() (lit string, err error) {
+	var ch_lit string
+	if l.ch[0] == '\\' {
+		l.advance(1)
+		ch_lit, err = l.readEscapeCharacter()
+		if err != nil {
+			return "", err
+		}
+	} else if l.ch[0] != '\'' {
+		ch_lit = string(l.ch[0])
+		l.advance(1)
+	}
+	return ch_lit, nil
+}
+
+func (l *Lexer) readEscapeCharacter() (lit string, err error) {
+	escapes := map[rune]string{
+		'n':  "\n",
+		't':  "\t",
+		'v':  "\v",
+		'b':  "\b",
+		'r':  "\r",
+		'f':  "\f",
+		'a':  "\a",
+		'\\': "\\",
+		'?':  "?",
+		'\'': "'",
+		'"':  "\"",
+	}
+
+	if lit, ok := escapes[l.ch[0]]; ok {
+		l.advance(1)
+		return lit, nil
+	} else if l.ch[0] == 'x' {
+		l.advance(1)
+		if isHexDigit(l.ch[0]) {
+			pos := l.pos[0]
+			for n := 0; n < 2 && isHexDigit(l.ch[0]); n++ {
+				l.advance(1)
+			}
+			code, _ := strconv.ParseInt(l.input[pos:l.pos[0]], 16, 8)
+			return string(rune(code)), nil
+		} else {
+			return "", fmt.Errorf("Syntax Error: Illegal character '%c' in escape sequence", l.ch[0])
+		}
+	} else if isOctalDigit(l.ch[0]) {
+		pos := l.pos[0]
+		for n := 0; n < 3 && isOctalDigit(l.ch[0]); n++ {
+			l.advance(1)
+		}
+		code, _ := strconv.ParseInt(l.input[pos:l.pos[0]], 8, 8)
+		return string(rune(code)), nil
+	} else {
+		return "", fmt.Errorf("Syntax Error: Unknown escape sequence '\\%c'", l.ch[0])
+	}
 }
 
 func (l *Lexer) advance(n int) {

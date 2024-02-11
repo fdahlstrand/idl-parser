@@ -99,8 +99,12 @@ const (
 	UINT32      = "unit32"
 	UINT64      = "unit64"
 
-	// 7.2.6 Integer Literal
+	// 7.2.6.1 Integer Literal
 	INTEGER = "INTEGER"
+
+	// 7.2.6.2 Character Literals
+	CHAR_LITERAL  = "CHAR_LITERAL"
+	WCHAR_LITERAL = "WCHAR_LITERAL"
 
 	// Delimiters
 	SEMICOLON = ";"
