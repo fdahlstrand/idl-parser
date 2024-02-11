@@ -92,6 +92,22 @@ var tests = []struct {
 	{"L'\\up'", token.ILLEGAL, "Syntax Error: Illegal character 'p' in escape sequence"},
 	{"'\\u14B'", token.ILLEGAL, "Syntax Error: Unknown escape sequence '\\u'"},
 
+	// String Literals
+	{"\"ABC\"", token.STRING_LITERAL, "ABC"},
+	{"\"\"", token.STRING_LITERAL, ""},
+	{"\"", token.ILLEGAL, "Syntax Error: String literal not terminated"},
+	{"\"\\n\"", token.STRING_LITERAL, "\n"},
+	{"\"\\n\\t\\v\\b\\r\\f\\\\\\?\\'\\\"\"", token.STRING_LITERAL, "\n\t\v\b\r\f\\?'\""},
+	{"\"\\p\"", token.ILLEGAL, "Syntax Error: Unknown escape sequence '\\p'"},
+	{"\"\\x9\\x4d\\7\\60\\112\"", token.STRING_LITERAL, "\tM\a0J"},
+	{"\"\\xag\"", token.STRING_LITERAL, "\ng"},
+	{"\"\\15r&\"", token.STRING_LITERAL, "\rr&"},
+	{"\"ABC\\0DEF\"", token.ILLEGAL, "Syntax Error: (null) character not allowed in strings"},
+	{"L\"xyz\"", token.WSTRING_LITERAL, "xyz"},
+	{"L\"\\uC\\u2A\\u11e\\u2713\\u27145\"", token.WSTRING_LITERAL, "\f*Ğ✓\u27145"},
+	{"\"AAA\\u14Bmno\"", token.ILLEGAL, "Syntax Error: Unknown escape sequence '\\u'"},
+	{"\"AB\nC\"", token.ILLEGAL, "Syntax Error: String literal not terminated"},
+
 	// Keywords
 	{"abstract", token.ABSTRACT, "abstract"},
 	{"any", token.ANY, "any"},

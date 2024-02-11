@@ -104,6 +104,30 @@ func (l *Lexer) NextToken() token.Token {
 			tok = newToken(token.ILLEGAL, err.Error())
 		}
 
+		// == STRING LITERALS ===============================================
+	} else if l.ch[0] == '"' || (l.ch[0] == 'L' && l.ch[1] == '"') {
+		wide := l.ch[0] == 'L'
+		if wide {
+			l.advance(2)
+		} else {
+			l.advance(1)
+		}
+
+		str_lit, err := l.readStringLiteral(wide)
+		if l.ch[0] == '"' {
+			l.advance(1)
+			if wide {
+				tok = newToken(token.WSTRING_LITERAL, str_lit)
+			} else {
+				tok = newToken(token.STRING_LITERAL, str_lit)
+			}
+		} else {
+			if err == nil {
+				err = fmt.Errorf("Syntax Error: String literal not terminated")
+			}
+			tok = newToken(token.ILLEGAL, err.Error())
+		}
+
 		// == IDENTIFIERS & KEYWORDS ========================================
 	} else if isAlpha(l.ch[0]) {
 		ident := l.readIdentifier()
@@ -193,6 +217,27 @@ func (l *Lexer) readHexInteger() string {
 	}
 
 	return l.input[pos:l.pos[0]]
+}
+
+func (l *Lexer) readStringLiteral(wide bool) (lit string, err error) {
+	lit = ""
+	for l.ch[0] != '"' && l.ch[0] != 0 && l.ch[0] != '\n' {
+		if l.ch[0] == '\\' {
+			l.advance(1)
+			ch, err := l.readEscapeCharacter(wide)
+			if err == nil && ch == "\000" {
+				return "", fmt.Errorf("Syntax Error: (null) character not allowed in strings")
+			} else if err == nil {
+				lit += ch
+			} else {
+				return "", err
+			}
+		} else {
+			lit += string(l.ch[0])
+			l.advance(1)
+		}
+	}
+	return lit, nil
 }
 
 func (l *Lexer) readCharLiteral(wide bool) (lit string, err error) {
