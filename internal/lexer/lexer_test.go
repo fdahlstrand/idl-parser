@@ -108,6 +108,24 @@ var tests = []struct {
 	{"\"AAA\\u14Bmno\"", token.ILLEGAL, "Syntax Error: Unknown escape sequence '\\u'"},
 	{"\"AB\nC\"", token.ILLEGAL, "Syntax Error: String literal not terminated"},
 
+	// Floating Point Literals
+	{"1.0", token.FLOATING_PT_LITERAL, "1.0"},
+	{"1.", token.FLOATING_PT_LITERAL, "1."},
+	{".1", token.FLOATING_PT_LITERAL, ".1"},
+	{"1.0e1", token.FLOATING_PT_LITERAL, "1.0e1"},
+	{"1.0e-2", token.FLOATING_PT_LITERAL, "1.0e-2"},
+	{"1.0e+3", token.FLOATING_PT_LITERAL, "1.0e+3"},
+	{"2.14E+3", token.FLOATING_PT_LITERAL, "2.14E+3"},
+	{"3.56e", token.ILLEGAL, "Syntax Error: Missing exponent"},
+	{".0e1", token.FLOATING_PT_LITERAL, ".0e1"},
+	{".0e-2", token.FLOATING_PT_LITERAL, ".0e-2"},
+	{".0e+3", token.FLOATING_PT_LITERAL, ".0e+3"},
+	{".14E+3", token.FLOATING_PT_LITERAL, ".14E+3"},
+	{"2e2", token.FLOATING_PT_LITERAL, "2e2"},
+	{"3.e4", token.FLOATING_PT_LITERAL, "3.e4"},
+	{".56e", token.ILLEGAL, "Syntax Error: Missing exponent"},
+	{"e2", token.IDENTIFIER, "e2"},
+
 	// Keywords
 	{"abstract", token.ABSTRACT, "abstract"},
 	{"any", token.ANY, "any"},

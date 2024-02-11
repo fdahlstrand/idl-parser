@@ -110,6 +110,9 @@ const (
 	STRING_LITERAL  = "STRING_LITERAL"
 	WSTRING_LITERAL = "WSTRING_LITERAL"
 
+	// 7.2.6.4 Floating-point Literals
+	FLOATING_PT_LITERAL = "FLOATING_PT_LITERAL"
+
 	// Delimiters
 	SEMICOLON = ";"
 	LCURLY    = "{"

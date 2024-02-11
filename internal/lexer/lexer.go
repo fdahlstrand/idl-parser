@@ -155,7 +155,23 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.INTEGER, prefix+hex)
 	} else if isDigit(l.ch[0]) {
 		dec := l.readDecimalInteger()
-		tok = newToken(token.INTEGER, dec)
+		if l.ch[0] == '.' || l.ch[0] == 'e' || l.ch[0] == 'E' {
+			fp, err := l.readFPLiteral(dec)
+			if err != nil {
+				tok = newToken(token.ILLEGAL, err.Error())
+			} else {
+				tok = newToken(token.FLOATING_PT_LITERAL, fp)
+			}
+		} else {
+			tok = newToken(token.INTEGER, dec)
+		}
+	} else if l.ch[0] == '.' {
+		fp, err := l.readFPLiteral("")
+		if err != nil {
+			tok = newToken(token.ILLEGAL, err.Error())
+		} else {
+			tok = newToken(token.FLOATING_PT_LITERAL, fp)
+		}
 
 		// == END OF FILE ===================================================
 	} else if l.ch[0] == 0 {
@@ -253,6 +269,32 @@ func (l *Lexer) readCharLiteral(wide bool) (lit string, err error) {
 		l.advance(1)
 	}
 	return ch_lit, nil
+}
+
+func (l *Lexer) readFPLiteral(int string) (lit string, err error) {
+	var frac string
+	var exp string
+
+	if l.ch[0] == '.' {
+		l.advance(1)
+		frac = "." + l.readDecimalInteger()
+	}
+
+	if l.ch[0] == 'e' || l.ch[0] == 'E' {
+		exp += string(l.ch[0])
+		l.advance(1)
+		if l.ch[0] == '-' || l.ch[0] == '+' {
+			exp += string(l.ch[0])
+			l.advance(1)
+		}
+		e := l.readDecimalInteger()
+		if e == "" {
+			return "", fmt.Errorf("Syntax Error: Missing exponent")
+		}
+		exp += e
+	}
+
+	return int + frac + exp, nil
 }
 
 func (l *Lexer) readEscapeCharacter(wide bool) (lit string, err error) {
