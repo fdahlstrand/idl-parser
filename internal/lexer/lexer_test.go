@@ -46,6 +46,8 @@ var tests = []struct {
 	{"_Y", token.IDENTIFIER, "Y"},
 	{"__bad", token.ILLEGAL, ""},
 	{"_0notgood", token.ILLEGAL, ""},
+	{"Abstract", token.ILLEGAL, "Syntax Error: 'Abstract' collides with keyword 'abstract'"},
+	{"vAlUeBaSe", token.ILLEGAL, "Syntax Error: 'vAlUeBaSe' collides with keyword 'ValueBase'"},
 
 	// Integer Literals
 	{"0", token.INTEGER, "0"},

@@ -3,6 +3,7 @@ package lexer
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/fdahlstrand/idl-parser/internal/token"
@@ -134,7 +135,11 @@ func (l *Lexer) NextToken() token.Token {
 		if tt, ok := token.Keywords[ident]; ok {
 			tok = newToken(tt, ident)
 		} else {
-			tok = newToken(token.IDENTIFIER, ident)
+			if kw, ok := checkKeywordCollision(ident); ok {
+				tok = newToken(token.ILLEGAL, fmt.Sprintf("Syntax Error: '%s' collides with keyword '%s'", ident, kw))
+			} else {
+				tok = newToken(token.IDENTIFIER, ident)
+			}
 		}
 	} else if l.ch[0] == '_' {
 		l.advance(1)
@@ -144,6 +149,7 @@ func (l *Lexer) NextToken() token.Token {
 		} else {
 			tok = newToken(token.ILLEGAL, "")
 		}
+
 		// == INTEGER LITERALS ==============================================
 	} else if l.ch[0] == '0' && isOctalDigit(l.ch[1]) {
 		oct := l.readOctalInteger()
@@ -388,6 +394,16 @@ func isOctalDigit(ch rune) bool {
 
 func isHexDigit(ch rune) bool {
 	return ('0' <= ch && ch <= '9') || ('A' <= ch && ch <= 'F') || ('a' <= ch && ch <= 'f')
+}
+
+func checkKeywordCollision(ident string) (keyword string, match bool) {
+	for kw := range token.Keywords {
+		if strings.EqualFold(ident, kw) {
+			return kw, true
+		}
+	}
+
+	return "", false
 }
 
 func newToken(typ token.TokenType, lit string) token.Token {
